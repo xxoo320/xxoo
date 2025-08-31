@@ -4,7 +4,7 @@ from flask_sqlalchemy import SQLAlchemy
 
 app = Flask(__name__)
 
-# Render 提供的 DATABASE_URL 环境变量
+# 使用 Render 提供的数据库 URL
 DATABASE_URL = os.environ.get("DATABASE_URL")
 
 # SQLAlchemy 配置
@@ -18,6 +18,7 @@ class Message(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.String(50), nullable=False)
     content = db.Column(db.String(200), nullable=False)
+    created_at = db.Column(db.DateTime, server_default=db.func.now())  # 自动记录创建时间
 
 # 首页
 @app.route("/", methods=["GET", "POST"])
@@ -33,8 +34,12 @@ def index():
 
         return redirect("/")
 
-    messages = Message.query.order_by(Message.id.desc()).all()
+    messages = Message.query.order_by(Message.created_at.desc()).all()  # 按时间倒序显示
     return render_template("index.html", messages=messages)
+
+# --- 新增：首次部署自动建表 ---
+with app.app_context():
+    db.create_all()
 
 if __name__ == "__main__":
     # 本地调试用
